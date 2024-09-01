@@ -1,0 +1,3 @@
+- HTTPS Communication
+- SQL DATABASE
+- More improvements
