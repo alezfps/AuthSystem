@@ -58,7 +58,7 @@ def main():
 
     while True:
         try:
-            command = input("cli_tool> ").strip()
+            command = input("alez> ").strip()
             if command == 'exit':
                 break
 
