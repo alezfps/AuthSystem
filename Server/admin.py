@@ -2,7 +2,7 @@ import requests
 import json
 
 API_BASE_URL = 'http://localhost:5000'  # Replace with your Server IP
-API_KEY = 'example1337'  # Replace with your API Key
+API_KEY = '1337'  # Replace with your API key
 
 def get_headers():
     return {'X-API-KEY': API_KEY, 'Content-Type': 'application/json'}
@@ -42,7 +42,7 @@ def delete_product(name):
     response = requests.post(url, headers=get_headers(), json=data)
     handle_response(response)
 def show_help():
-    print("Commands:")
+    print("Available commands:")
     print("  key <create|delete|claim|reset> - Manage keys")
     print("    create <product_id> <duration> - Create a new key")
     print("    delete <key> - Delete an existing key")
@@ -50,12 +50,11 @@ def show_help():
     print("  product <create|delete> - Manage products")
     print("    create <name> - Create a new product")
     print("    delete <name> - Delete a product")
-    print("  help - Show help message")
-    print("  exit - Exit")
+    print("  help - Show this help message")
+    print("  exit - Exit the CLI tool")
 
 def main():
     show_help()
-
     while True:
         try:
             command = input("alez> ").strip()
@@ -90,7 +89,7 @@ def main():
                     _, _, key = parts
                     reset_hwid(key)
                 else:
-                    print("Unknown subcommand. Type 'help' for a list of commands.")
+                    print("Unknown key subcommand. Type 'help' for a list of commands.")
 
             elif main_command == 'product':
                 if sub_command == 'create':
@@ -106,7 +105,7 @@ def main():
                     _, _, name = parts
                     delete_product(name)
                 else:
-                    print("Unknown subcommand. Type 'help' for a list of commands.")
+                    print("Unknown product subcommand. Type 'help' for a list of commands.")
 
             else:
                 print("Unknown command. Type 'help' for a list of commands.")

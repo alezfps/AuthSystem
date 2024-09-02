@@ -2,6 +2,7 @@
 #include <string>
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
+#include <memory>
 #include "Hwid.h"
 
 using json = nlohmann::json;
@@ -11,19 +12,34 @@ size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     return size * nmemb;
 }
 
-std::string send_post_request(const std::string& url, const nlohmann::json& data) {
-    CURL* curl;
-    CURLcode res;
-    std::string read_buffer;
-
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-    curl = curl_easy_init();
-
-    if (!curl) {
-        std::cerr << "Failed to initialize CURL" << std::endl;
-        return "";
+class CurlWrapper {
+public:
+    CurlWrapper() {
+        curl_global_init(CURL_GLOBAL_DEFAULT);
+        curl = curl_easy_init();
+        if (!curl) {
+            throw std::runtime_error("Failed to initialize CURL");
+        }
     }
 
+    ~CurlWrapper() {
+        if (curl) {
+            curl_easy_cleanup(curl);
+        }
+        curl_global_cleanup();
+    }
+
+    CURL* get() const { return curl; }
+
+private:
+    CURL* curl;
+};
+
+std::string send_post_request(const std::string& url, const nlohmann::json& data) {
+    CurlWrapper curlWrapper;
+    CURL* curl = curlWrapper.get();
+
+    std::string read_buffer;
     struct curl_slist* headers = NULL;
     headers = curl_slist_append(headers, "Content-Type: application/json");
 
@@ -32,14 +48,12 @@ std::string send_post_request(const std::string& url, const nlohmann::json& data
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &read_buffer);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L); 
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
 
-    res = curl_easy_perform(curl);
+    CURLcode res = curl_easy_perform(curl);
     if (res != CURLE_OK) {
         std::cerr << "CURL error: " << curl_easy_strerror(res) << std::endl;
-        curl_easy_cleanup(curl);
         curl_slist_free_all(headers);
-        curl_global_cleanup();
         return "";
     }
 
@@ -49,19 +63,21 @@ std::string send_post_request(const std::string& url, const nlohmann::json& data
         std::cerr << "HTTP error: " << http_code << std::endl;
     }
 
-    curl_easy_cleanup(curl);
     curl_slist_free_all(headers);
-    curl_global_cleanup();
-
     return read_buffer;
 }
 
-int main() {
+int main(int argc, char* argv[]) {
     std::string server_url = "http://localhost:5000";
+
+    if (argc > 1) {
+        server_url = argv[1];
+    }
 
     std::string key;
     std::string hwid = getHWID();
     std::cout << "HWID: " << hwid << std::endl;
+    std::cout << "Enter key: ";
     std::cin >> key;
 
     json request_data = {
